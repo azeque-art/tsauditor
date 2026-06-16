@@ -11,9 +11,27 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 from rich.console import Console
 from rich.table import Table
 from rich import box
+
+from tsauditor.report.remediation import suggest
+
+
+def _json_default(obj: Any) -> Any:
+    """
+    JSON serialization fallback. Converts numpy scalars and arrays to native
+    Python types so evidence values stay JSON *numbers* (not quoted strings),
+    then falls back to str() for anything else.
+    """
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
 
 
 # ── Severity constants ────────────────────────────────────────────────────────
@@ -53,6 +71,11 @@ class Issue:
     column: Optional[str] = None
     evidence: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def suggestion(self) -> str:
+        """A suggested remediation action, derived from the issue code."""
+        return suggest(self.code, self.column, self.evidence)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "module":      self.module,
@@ -61,6 +84,7 @@ class Issue:
             "description": self.description,
             "column":      self.column,
             "evidence":    self.evidence,
+            "suggestion":  self.suggestion,
         }
 
 
@@ -116,6 +140,29 @@ class GuardReport:
             issues = [i for i in issues if i.severity == severity]
         return issues
 
+    def leaky_columns(self) -> List[str]:
+        """
+        Columns flagged by the leakage module — the features to review/remove
+        first. The library never drops them for you; this is the shortlist.
+        """
+        cols = [i.column for i in self.filter(module="leakage") if i.column]
+        return sorted(set(cols))
+
+    def suggestions(self) -> List[Dict[str, Any]]:
+        """
+        Per-issue suggested actions, ordered by severity. Advisory only —
+        tsauditor reports and recommends but never edits your data.
+        """
+        return [
+            {
+                "code": i.code,
+                "column": i.column,
+                "severity": i.severity,
+                "suggestion": i.suggestion,
+            }
+            for i in self.all_issues
+        ]
+
     # ── Output methods ────────────────────────────────────────────────────────
 
     def summary(self) -> None:
@@ -164,6 +211,13 @@ class GuardReport:
 
         console.print(table)
 
+        # Suggested actions (advisory — no data is modified)
+        console.print("\n[bold]Suggested actions[/bold]")
+        for issue in self.all_issues:
+            where = f" [dim]({issue.column})[/dim]" if issue.column else ""
+            console.print(f"  • [bold]{issue.code}[/bold]{where}: {issue.suggestion}")
+        console.print()
+
     def to_json(self, path: str) -> None:
         """
         Export the full report to a JSON file.
@@ -183,7 +237,7 @@ class GuardReport:
             },
         }
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, default=str)
+            json.dump(payload, f, indent=2, default=_json_default)
 
     def to_dict(self) -> Dict[str, Any]:
         """Return the full report as a plain Python dict."""

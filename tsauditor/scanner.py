@@ -11,7 +11,7 @@ from typing import Optional
 
 import pandas as pd
 
-from tsauditor.report.summary import GuardReport, Issue, CRITICAL, WARNING, INFO
+from tsauditor.report.summary import GuardReport, Issue, CRITICAL, WARNING
 from tsauditor.utils.validation import validate_dataframe, infer_frequency
 
 
@@ -92,18 +92,10 @@ def scan(
             audit_stationarity,
             audit_missing,
         )
-        report.critical += [
-            i for i in audit_frequency(df, domain=domain)
-            if i.severity == CRITICAL
-        ]
-        report.warnings += [
-            i for i in audit_frequency(df, domain=domain)
-            if i.severity == WARNING
-        ]
-        report.info += [
-            i for i in audit_frequency(df, domain=domain)
-            if i.severity == INFO
-        ]
+        # audit_frequency is run once and its issues routed by severity.
+        # (Previously it was called three times — once per bucket.)
+        for issue in audit_frequency(df, domain=domain):
+            _append_issue(report, issue)
 
         for issue in audit_stationarity(df, domain=domain):
             _append_issue(report, issue)

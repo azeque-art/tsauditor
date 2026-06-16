@@ -75,7 +75,18 @@ def validate_dataframe(
         df = df.set_index(time_col)
 
     if not isinstance(df.index, pd.DatetimeIndex):
-        # Attempt coercion as a last resort
+        # Do NOT silently coerce a numeric index. pd.to_datetime would happily
+        # reinterpret a plain RangeIndex like [0, 1, 2, ...] as nanosecond epoch
+        # timestamps (all near 1970-01-01), producing quietly wrong frequency and
+        # gap results. A numeric index almost never means "datetime", so refuse it.
+        if pd.api.types.is_numeric_dtype(df.index):
+            raise ValueError(
+                "DataFrame index is numeric, not datetime, and will not be coerced "
+                "(it would be misread as epoch timestamps). Pass "
+                "time_col='your_date_column' or set a DatetimeIndex before calling "
+                "tsauditor.scan()."
+            )
+        # For string/object date-like labels, attempt coercion as a last resort.
         try:
             df.index = pd.to_datetime(df.index)
         except Exception:

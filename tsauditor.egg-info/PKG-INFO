@@ -17,10 +17,114 @@ Classifier: Programming Language :: Python :: 3.12
 Classifier: Topic :: Scientific/Engineering :: Information Analysis
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
-Requires-Dist: pandas>=1.5
-Requires-Dist: numpy>=1.23
-Requires-Dist: scipy>=1.9
-Requires-Dist: rich>=13.0
+License-File: LICENSE
+Requires-Dist: pandas<3,>=1.5
+Requires-Dist: numpy<3,>=1.23
+Requires-Dist: scipy<2,>=1.9
+Requires-Dist: statsmodels<1,>=0.13
+Requires-Dist: rich<15,>=13.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Dynamic: license-file
+
+# tsauditor
+
+A data-quality auditing library for **time-series tabular data**, with a focus on
+financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a
+structured report of structural problems, anomalies, and — its core contribution —
+**data-leakage** between features and the prediction target.
+
+The project grew out of a real bug: a same-day percentage-change feature (`ChangeP`)
+was used to predict a direction label derived from the same price, inflating accuracy
+to ~99% until the leaky column was removed and it collapsed to ~52–58%. `tsauditor`
+exists to catch that class of mistake automatically.
+
+## Installation
+
+```bash
+git clone <repo-url>
+cd tsauditor
+pip install -e ".[dev]"
+```
+
+Requires Python ≥ 3.9. Core dependencies: `pandas`, `numpy`, `scipy`, `statsmodels`, `rich`.
+
+## Quickstart
+
+```python
+import tsauditor as tsa
+
+report = tsa.scan(df, target="Direction", domain="finance")
+
+report.summary()                 # rich-formatted CLI table
+report.critical                  # list[Issue] that block modeling
+report.filter(module="leakage")  # programmatic filtering
+report.to_json("report.json")    # structured export
+```
+
+`scan()` returns a `GuardReport` holding `Issue` dataclasses bucketed by severity
+(`critical`, `warnings`, `info`) plus dataset metadata.
+
+## What it checks
+
+| Module | Code | Severity | Detects |
+|--------|------|----------|---------|
+| profiler | PRF001 | warning | Irregular timestamp frequency |
+| profiler | PRF002 | warning | Clustered missing values |
+| profiler | PRF003 | info | Non-stationarity (Augmented Dickey-Fuller) |
+| profiler | PRF004 | warning | Duplicate timestamps |
+| profiler | PRF005 | warning | Clustered gaps |
+| profiler | PRF006 | warning | High overall missing rate |
+| anomaly | ANO001 | warning | Stuck / repeated constant values |
+| anomaly | ANO002 | warning | Point outliers (z-score + IQR) |
+| anomaly | ANO003 | warning | Contextual spikes (local rolling z-score) |
+| leakage | LEK001 | critical | Target equivalence (feature reproduces the target) |
+| leakage | LEK002 | warning | Positive-lag cross-correlation peak (future info) |
+| leakage | LEK003 | warning | Rolling-window lookahead (excess over persistence) |
+
+### Leakage detection (the research core)
+
+Leakage checks are **rank-based**, chosen by target type:
+
+- **LEK001 — equivalence.** Continuous targets use `|Spearman ρ|`; binary targets use
+  **AUC separation** (`max(AUC, 1−AUC)`). This is deliberate: Pearson against a binary
+  0/1 target is point-biserial correlation, which is capped near `√(2/π) ≈ 0.798`, so a
+  feature whose sign *defines* the target scores only ~0.80 and slips under a naive
+  threshold. AUC scores it 1.0.
+- **LEK002 — cross-correlation.** Flags features whose peak association with the target
+  falls at a *positive* lag (the feature aligns with the target's future).
+- **LEK003 — temporal lookahead.** Flags features that correlate with the future target
+  *beyond* what the target's own autocorrelation can explain — the signature of a
+  forward-looking or centered window. The persistence baseline is what keeps a
+  legitimate trailing feature from being false-flagged.
+
+LEK002/LEK003 are WARNING-level *suspicions*: in pure cross-correlation a genuine strong
+predictor and a leak are distinguishable only by magnitude. LEK001 is CRITICAL because
+equivalence is near-deterministic.
+
+## Architecture
+
+```
+tsauditor/
+├── scanner.py          # scan() — orchestrates all modules into a GuardReport
+├── profiler/           # structural checks: frequency, missing, stationarity
+├── anomaly/            # point.py, contextual.py
+├── leakage/            # equivalence.py, correlation.py, temporal.py
+├── report/summary.py   # GuardReport + Issue dataclasses, rich/JSON output
+└── utils/validation.py # input validation & DataFrame normalization
+```
+
+## Testing
+
+```bash
+pytest -q
+```
+
+## Status
+
+Alpha (`0.1.0`). Profiler, anomaly, and leakage modules are implemented and tested.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

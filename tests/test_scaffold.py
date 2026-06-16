@@ -165,15 +165,16 @@ def test_scan_rejects_invalid_domain(clean_financial_df):
 
 
 def test_scan_skips_leakage_without_target(clean_financial_df):
-    """scan() should not crash when target is None and run_leakage=True."""
-    # All modules will raise NotImplementedError once implemented;
-    # for now we just verify the domain/target guard works cleanly.
-    with pytest.raises(NotImplementedError):
-        tsa.scan(clean_financial_df, target=None, domain="finance")
+    """scan() should run cleanly and skip leakage when target is None."""
+    # Leakage is the only module still stubbed (raises NotImplementedError).
+    # With target=None the leakage block is skipped, so scan() must complete
+    # and return a GuardReport containing no leakage-module issues.
+    report = tsa.scan(clean_financial_df, target=None, domain="finance")
+    assert isinstance(report, GuardReport)
+    assert all(issue.module != "leakage" for issue in report.all_issues)
 
 
 def test_scan_returns_guard_report(clean_financial_df):
-    """Once profiler is implemented this will return a real report.
-    For now verify the return type when modules are stubbed out."""
-    with pytest.raises(NotImplementedError):
-        tsa.scan(clean_financial_df, target="Direction", domain="finance")
+    """With all modules implemented, scan() returns a populated GuardReport."""
+    report = tsa.scan(clean_financial_df, target="Direction", domain="finance")
+    assert isinstance(report, GuardReport)

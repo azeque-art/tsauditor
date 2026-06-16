@@ -24,11 +24,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-    "pandas>=1.5",
-    "numpy>=1.23",
-    "scipy>=1.9",
-    "statsmodels>=0.13",
-    "rich>=13.0",
+    "pandas>=1.5,<3",
+    "numpy>=1.23,<3",
+    "scipy>=1.9,<2",
+    "statsmodels>=0.13,<1",
+    "rich>=13.0,<15",
 ]
 
 [project.optional-dependencies]
@@ -43,3 +43,17 @@ include = ["tsauditor*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["tsauditor"]
+omit = [
+    "tsauditor/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true

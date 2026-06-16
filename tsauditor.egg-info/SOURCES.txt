@@ -1,5 +1,15 @@
+LICENSE
+README.md
 pyproject.toml
+tests/test_contextual.py
+tests/test_correlation.py
+tests/test_equivalence.py
+tests/test_missing.py
+tests/test_point.py
+tests/test_profiler.py
 tests/test_scaffold.py
+tests/test_stationarity.py
+tests/test_temporal.py
 tsauditor/__init__.py
 tsauditor/scanner.py
 tsauditor.egg-info/PKG-INFO
