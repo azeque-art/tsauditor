@@ -38,7 +38,7 @@ jobs:
         # Only upload once per matrix run to avoid duplicate/conflicting reports.
         # ubuntu + the lowest supported Python version is the canonical run.
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
