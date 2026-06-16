@@ -1,4 +1,7 @@
 # tsauditor
+[![CI](https://github.com/<your-username>/tsauditor/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/tsauditor/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/<your-username>/tsauditor/branch/main/graph/badge.svg)](https://codecov.io/gh/<your-username>/tsauditor)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A data-quality auditing library for **time-series tabular data**, with a focus on
 financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a
@@ -99,9 +102,18 @@ tsauditor/
 pytest -q
 ```
 
+## Contributing
+
+Contributions are welcome. Check [open issues](https://github.com/imann128/tsauditor/issues)
+for ideas, or look for the `good first issue` label. Run `pytest -q` before opening a PR —
+all 93 tests must pass, and CI will verify this across Python 3.9–3.14 on Linux, Windows, and macOS.
+
+
 ## Status
 
-Alpha (`0.1.0`). Profiler, anomaly, and leakage modules are implemented and tested.
+Beta (`0.1.0`). Profiler, anomaly, and leakage modules are implemented and tested
+(93 tests passing, CI across Python 3.9–3.14 on Linux, Windows, macOS).
+Not yet on PyPI — see Installation above for the development install.
 
 ## License
 
