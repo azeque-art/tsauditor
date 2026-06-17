@@ -1,6 +1,6 @@
 # tsauditor
-[![CI](https://github.com/<your-username>/tsauditor/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/tsauditor/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/<your-username>/tsauditor/branch/main/graph/badge.svg)](https://codecov.io/gh/<your-username>/tsauditor)
+[![CI](https://github.com/imann128/tsauditor/actions/workflows/ci.yml/badge.svg)](https://github.com/imann128/tsauditor/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/imann128/tsauditor/branch/main/graph/badge.svg)](https://codecov.io/gh/imann128/tsauditor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A data-quality auditing library for **time-series tabular data**, with a focus on
