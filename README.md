@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A data-quality auditing library for **time-series tabular data**, with a focus on
-financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a
+financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a 
 structured report of structural problems, anomalies, and — its core contribution —
 **data-leakage** between features and the prediction target.
 
