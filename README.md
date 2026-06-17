@@ -1,6 +1,6 @@
 # tsauditor
 [![CI](https://github.com/imann128/tsauditor/actions/workflows/ci.yml/badge.svg)](https://github.com/imann128/tsauditor/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/imann128/tsauditor/branch/main/graph/badge.svg)](https://codecov.io/gh/imann128/tsauditor)
+[![codecov](https://codecov.io/github/imann128/tsauditor/graph/badge.svg?token=3QKPEB8B4H)](https://codecov.io/github/imann128/tsauditor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A data-quality auditing library for **time-series tabular data**, with a focus on
@@ -111,7 +111,7 @@ all 93 tests must pass, and CI will verify this across Python 3.9–3.14 on Linu
 
 ## Status
 
-Beta (`0.1.1'). Profiler, anomaly, and leakage modules are implemented and tested
+Beta (`0.1.2'). Profiler, anomaly, and leakage modules are implemented and tested
 (93 tests passing, CI across Python 3.9–3.14 on Linux, Windows, macOS).
 
 ## License
