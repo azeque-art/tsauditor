@@ -1,24 +1,41 @@
 # tsauditor
+[![CI](https://github.com/imann128/tsauditor/actions/workflows/ci.yml/badge.svg)](https://github.com/imann128/tsauditor/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/imann128/tsauditor/graph/badge.svg)](https://codecov.io/github/imann128/tsauditor)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A data-quality auditing library for **time-series tabular data**, with a focus on
-financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a
+financial and sensor domains. `tsauditor` scans a `DataFrame` and returns a 
 structured report of structural problems, anomalies, and — its core contribution —
 **data-leakage** between features and the prediction target.
 
-The project grew out of a real bug: a same-day percentage-change feature (`ChangeP`)
-was used to predict a direction label derived from the same price, inflating accuracy
-to ~99% until the leaky column was removed and it collapsed to ~52–58%. `tsauditor`
-exists to catch that class of mistake automatically.
+The project grew out of a real bug in a Pakistani equity (OGDC) direction-prediction
+model: a same-day percentage-change feature (`ChangeP`) was mathematically near-identical
+to the target it was meant to predict. With `ChangeP` included, a Random Forest
+classifier reached 99.68% accuracy (AUC 0.9987); a Gradient Boosting classifier reached
+the same 99.68% accuracy (AUC 0.9967). Removing it — along with same-day `Open`, `High`,
+and `Low`, which are equally unavailable at prediction time — dropped accuracy to 69.81%
+(RF, AUC 0.7795) and 73.70% (GBM, AUC 0.8072) on a held-out test period
+(2025-01-09 to 2026-04-03). Both models still beat a 50% baseline, but the headline
+accuracy had been almost entirely an artifact of the leak. `tsauditor` exists to catch
+this class of mistake automatically before it reaches a model.
+See [`examples/ogdc_leakage_case`](examples/ogdc_leakage_case) for the full experiment,
+script, and measured results.
 
 ## Installation
 
 ```bash
-git clone <repo-url>
-cd tsauditor
-pip install -e ".[dev]"
+pip install tsauditor
 ```
 
 Requires Python ≥ 3.9. Core dependencies: `pandas`, `numpy`, `scipy`, `statsmodels`, `rich`.
+
+### Development setup
+
+```bash
+git clone https://github.com/imann128/tsauditor.git
+cd tsauditor
+pip install -e ".[dev]"
+```
 
 ## Quickstart
 
@@ -91,9 +108,17 @@ tsauditor/
 pytest -q
 ```
 
+## Contributing
+
+Contributions are welcome. Check [open issues](https://github.com/imann128/tsauditor/issues)
+for ideas, or look for the `good first issue` label. Run `pytest -q` before opening a PR —
+all 93 tests must pass, and CI will verify this across Python 3.9–3.14 on Linux, Windows, and macOS.
+
+
 ## Status
 
-Alpha (`0.1.0`). Profiler, anomaly, and leakage modules are implemented and tested.
+Beta (`0.1.2`). Profiler, anomaly, and leakage modules are implemented and tested
+(93 tests passing, CI across Python 3.9–3.14 on Linux, Windows, macOS).
 
 ## License
 
