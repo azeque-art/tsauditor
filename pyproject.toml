@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tsauditor"
-version = "0.1.0"
+version = "0.1.1"
 description = "A data quality auditing library for time-series tabular data in financial and sensor domains."
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,7 +12,7 @@ authors = [{ name = "Iman", email = "iman@example.com" }]
 requires-python = ">=3.9"
 keywords = ["time-series", "data-quality", "leakage-detection", "finance", "sensor", "audit"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
