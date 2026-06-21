@@ -37,6 +37,8 @@ cd tsauditor
 pip install -e ".[dev]"
 ```
 
+## **Note** Set domain="None" for domain agnostic usage. Similarly, it works well withuut defining a domain at all.
+
 ## Quickstart
 
 ```python
@@ -52,6 +54,50 @@ report.to_json("report.json")    # structured export
 
 `scan()` returns a `GuardReport` holding `Issue` dataclasses bucketed by severity
 (`critical`, `warnings`, `info`) plus dataset metadata.
+
+### Output:
+[financial_report](images/financial_report.png)
+
+
+## Sensor:
+
+###  Real-World Sensor Validation Example
+
+Below is an example using real weather station telemetry data. To showcase how `tsauditor` behaves during typical field failures, we manually inject three classic hardware faults: a frozen sensor reading, a complete network dropout gap, and a high-voltage electrical spike.
+
+```python
+import pandas as pd
+import tsauditor as tsa
+
+print(" Fetching real-world weather station sensor dataset...")
+url = "[https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv](https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv)"
+
+try:
+    df = pd.read_csv(url, parse_dates=["Date"], index_col="Date")
+    df.columns = ["air_temperature"]
+    print(" Dataset successfully loaded into memory!")
+except Exception as e:
+    print(f" Error loading dataset: {e}")
+
+print(" Injecting typical hardware field failures for evaluation...")
+# 1. Stuck sensor condition: flatlined at 12.2°C for 15 days straight
+df.iloc[100:115] = 12.2
+
+# 2. Transmission blackout: 10 days of completely missing telemetry
+df.iloc[300:310] = None
+
+# 3. Electrical surge: an impossible 75°C transient spike
+df.iloc[500] = 75.0
+
+print("\n Running `tsauditor` validation sweep...")
+print("-" * 60)
+
+# Execute the audit using the optimized sensor preset
+report = tsa.scan(df, domain="sensor")
+report.summary()
+```
+### Output:
+[sensor_report](images/sensor_report.png)
 
 ## What it checks
 
