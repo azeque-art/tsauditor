@@ -162,6 +162,9 @@ Contributions are welcome. Check [open issues](https://github.com/imann128/tsaud
 for ideas, or look for the `good first issue` label. Run `pytest -q` before opening a PR —
 all 93 tests must pass, and CI will verify this across Python 3.9–3.14 on Linux, Windows, and macOS.
 
+## Featured On:
+Featured #7 on [Data Science Weekly Issue - 657](https://datascienceweekly.substack.com/p/data-science-weekly-issue-657)
+
 
 ## Status
 
