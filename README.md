@@ -164,7 +164,7 @@ all 93 tests must pass, and CI will verify this across Python 3.9–3.14 on Linu
 
 ## Featured On:
 Featured #7 on [Data Science Weekly Issue - 657](https://datascienceweekly.substack.com/p/data-science-weekly-issue-657)
-
+[Article about tsauditor on LineUp Digest](https://lineupdigest.com/en/article/poka-vse-molcat-tsauditor-meniaet-podxod-k-upravleniiu-time-series-dannymi)
 
 ## Status
 
