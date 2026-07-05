@@ -8,11 +8,17 @@ def audit_stationarity(
     df: pd.DataFrame,
     alpha: float = 0.05,
     min_obs: int = 25,
+    max_lag: int = None,
     domain: str = None,
 ) -> list:
     """
     Audits numeric columns for stationarity using the Augmented Dickey-Fuller test.
     Validates DatetimeIndex and handles NaN/Infinite values.
+
+    ``max_lag`` caps the ADF lag search. By default (None) statsmodels chooses
+    the maximum lag and searches all of them via AIC — the bulk of scan()'s
+    runtime. Passing a small cap (e.g. 4) sharply reduces the number of OLS fits
+    at a slight cost in test precision.
     """
     issues = []
 
@@ -34,9 +40,20 @@ def audit_stationarity(
         if len(series) < min_obs:
             continue
 
+        # A constant column has no unit root to test and makes adfuller raise
+        # ("Invalid input, x is constant"). It is trivially (degenerately)
+        # stationary, so skip it rather than crash the whole scan.
+        if series.nunique() < 2:
+            continue
+
         # 3. Perform ADF test
         # adfuller returns: adf_stat, p_value, used_lag, n_obs, critical_values, icbest
-        result = adfuller(series, autolag="AIC")
+        try:
+            result = adfuller(series, maxlag=max_lag, autolag="AIC")
+        except (ValueError, np.linalg.LinAlgError):
+            # adfuller can still fail on near-singular or degenerate inputs; a
+            # single column's numerical quirk must not abort the entire audit.
+            continue
         adf_stat, p_value, _, n_obs, _, _ = result
 
         # 4. Check if non-stationary

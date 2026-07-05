@@ -8,6 +8,7 @@ Modules
 correlation  Cross-correlation across lags to detect future information in features.
 equivalence  Target equivalence detection (feature mathematically identical to target).
 temporal     Rolling window lookahead detection.
+asof         Point-in-time availability leakage (values used before release).
 
 Issue codes raised
 ------------------
@@ -17,14 +18,19 @@ LEK002  Positive-lag peak: feature's peak correlation with target occurs at a
         positive lag, indicating future information leakage.
 LEK003  Rolling window lookahead: suspected forward-looking window in feature
         construction.
+LEK004  As-of leakage: a value is used before it was available (its release
+        timestamp is later than the row it occupies). Opt-in; needs availability
+        metadata.
 """
 
 from tsauditor.leakage.correlation import audit_correlation_leakage
 from tsauditor.leakage.equivalence import audit_equivalence
 from tsauditor.leakage.temporal import audit_temporal_leakage
+from tsauditor.leakage.asof import audit_asof_leakage
 
 __all__ = [
     "audit_correlation_leakage",
     "audit_equivalence",
     "audit_temporal_leakage",
+    "audit_asof_leakage",
 ]

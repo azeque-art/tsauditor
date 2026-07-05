@@ -36,6 +36,23 @@ _REMEDIATIONS: Dict[str, str] = {
         "target beyond what the target's own persistence explains, the signature of "
         "a centered or forward-looking window."
     ),
+    "LEK004": (
+        "Align {target} to its release schedule: some values sit at a timestamp "
+        "earlier than when they were published, so rows before each release use "
+        "future information. Shift the column forward to its availability dates "
+        "(not reference dates) rather than dropping it."
+    ),
+    # ── Validity ─────────────────────────────────────────────────────────────
+    "VAL001": (
+        "Inspect the out-of-range values in {target}: they fall outside the "
+        "declared valid range and are likely data-feed glitches or a scaling "
+        "error. Correct or drop them before modeling."
+    ),
+    "VAL002": (
+        "Rows in {target} break an ordering constraint (e.g. a crossed book where "
+        "bid exceeds ask). Inspect these timestamps for feed glitches and correct "
+        "or remove them before modeling."
+    ),
     # ── Anomaly ──────────────────────────────────────────────────────────────
     "ANO001": (
         "Investigate {target} for a stuck sensor or a forward-filled gap: the value "

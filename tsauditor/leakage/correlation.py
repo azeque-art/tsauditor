@@ -59,6 +59,15 @@ def _encode_target(series: pd.Series, name: str) -> pd.Series:
     )
 
 
+def _align(a: np.ndarray, b: np.ndarray, tau: int):
+    """Slice ``a`` and ``b`` so element i pairs a_t with b_{t+tau}."""
+    n = len(a)
+    if tau >= 0:
+        return a[: n - tau], b[tau:]
+    s = -tau
+    return a[s:], b[: n - s]
+
+
 def audit_correlation_leakage(
     df: pd.DataFrame,
     target: str,
@@ -101,7 +110,10 @@ def audit_correlation_leakage(
     if y.dropna().nunique() < 2:
         return issues
 
-    lags = range(-max_lag, max_lag + 1)
+    # Rank-transform the target once (Spearman == Pearson of ranks). Ranking the
+    # full series a single time and correlating the shifted ranks across lags
+    # avoids re-ranking on every lag — the previous hot path.
+    ry = y.rank().to_numpy(dtype=float)
 
     for col in df.select_dtypes(include=["number"]).columns:
         if col == target:
@@ -110,25 +122,26 @@ def audit_correlation_leakage(
         x = df[col].astype(float).replace([np.inf, -np.inf], np.nan)
         if x.nunique() < 2:
             continue
+        rx = x.rank().to_numpy(dtype=float)
 
         best_lag = 0
         best_signed = 0.0
         best_abs = 0.0
 
-        for tau in lags:
-            # r(tau) = corr(feature_t, target_{t+tau}); shift(-tau) brings
-            # target_{t+tau} onto row t. .corr aligns on index, drops NaNs.
-            shifted = y.shift(-tau)
-            pair = pd.concat([x, shifted], axis=1).dropna()
-            if len(pair) < min_obs:
+        for tau in range(-max_lag, max_lag + 1):
+            # r(tau) = corr(feature_t, target_{t+tau}) on rank-transformed data.
+            a, b = _align(rx, ry, tau)
+            mask = ~(np.isnan(a) | np.isnan(b))
+            if int(mask.sum()) < min_obs:
                 continue
-            if pair.iloc[:, 1].nunique() < 2:
+            aa, bb = a[mask], b[mask]
+            if aa.std() == 0 or bb.std() == 0:  # constant subset -> undefined
                 continue
-            r = pair.iloc[:, 0].corr(pair.iloc[:, 1], method="spearman")
-            if pd.isna(r):
+            r = float(np.corrcoef(aa, bb)[0, 1])
+            if np.isnan(r):
                 continue
             if abs(r) > best_abs:
-                best_abs, best_lag, best_signed = abs(r), tau, float(r)
+                best_abs, best_lag, best_signed = abs(r), tau, r
 
         if best_lag > 0 and best_abs >= min_correlation:
             issues.append(

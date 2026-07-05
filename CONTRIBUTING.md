@@ -69,8 +69,8 @@ categories:
 
 - **Documentation** — clarifying docstrings, expanding the README, adding
   worked examples beyond the OGDC case in `examples/`.
-- **Edge-case tests** — every module in `profiler/`, `anomaly/`, and
-  `leakage/` has a test file; if you can think of an input that isn't
+- **Edge-case tests** — every module in `profiler/`, `anomaly/`, `leakage/`,
+  and `validity` has a test file; if you can think of an input that isn't
   covered (empty columns, all-NaN data, extreme value ranges, single-row
   DataFrames), a PR adding that test case is genuinely useful even if it
   doesn't change any implementation code.
@@ -87,9 +87,9 @@ categories:
 - Match the `Issue` dataclass fields exactly (`module`, `code`, `severity`,
   `description`, `column`, `evidence`) — see `tsauditor/report/summary.py`.
 - New issue codes should follow the existing prefix convention (`PRF*` for
-  profiler, `ANO*` for anomaly, `LEK*` for leakage) and get a corresponding
-  entry in `tsauditor/report/remediation.py` so the report can suggest an
-  action for it.
+  profiler, `ANO*` for anomaly, `LEK*` for leakage, `VAL*` for validity) and
+  get a corresponding entry in `tsauditor/report/remediation.py` so the report
+  can suggest an action for it.
 
   - If you add a new code, also add an entry for it in
   `tsauditor/report/remediation.py`.

@@ -11,8 +11,16 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score
+
+try:
+    from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+    from sklearn.metrics import accuracy_score, roc_auc_score
+except ImportError:
+    raise SystemExit(
+        "This example trains comparison models and needs scikit-learn.\n"
+        "Install it with:  pip install scikit-learn   (or: pip install 'tsauditor[examples]')\n"
+        "tsauditor itself does NOT require scikit-learn; it is only used by this script."
+    )
 
 # paths
 data_dir = os.path.dirname(os.path.abspath(__file__))

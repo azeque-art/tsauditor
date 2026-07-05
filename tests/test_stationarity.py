@@ -1,12 +1,36 @@
 import pytest
 import pandas as pd
 import numpy as np
+
+import tsauditor as tsa
 from tsauditor.profiler.stationarity import audit_stationarity
 
 
 @pytest.fixture
 def base_date_index():
     return pd.date_range("2026-01-01", periods=100, freq="D")
+
+
+def test_max_lag_cap_runs(base_date_index):
+    """Capping the ADF lag search still returns a list of Issues, no crash."""
+    df = pd.DataFrame(
+        {"rw": np.cumsum(np.random.default_rng(0).normal(0, 1, 100))},
+        index=base_date_index,
+    )
+    issues = audit_stationarity(df, max_lag=4)
+    assert isinstance(issues, list)
+
+
+def test_scan_run_stationarity_toggle(base_date_index):
+    """run_stationarity=False skips the ADF check (no PRF003)."""
+    df = pd.DataFrame(
+        {"rw": np.cumsum(np.random.default_rng(1).normal(0, 1, 100))},
+        index=base_date_index,
+    )
+    on = tsa.scan(df, run_stationarity=True)
+    off = tsa.scan(df, run_stationarity=False)
+    assert any(i.code == "PRF003" for i in on.all_issues)  # random walk -> flagged
+    assert all(i.code != "PRF003" for i in off.all_issues)  # skipped entirely
 
 
 def test_audit_stationarity_scenarios(base_date_index):
@@ -76,3 +100,17 @@ def test_audit_stationarity_with_nan_and_inf(base_date_index):
 
     issues = audit_stationarity(df, min_obs=25)
     assert isinstance(issues, list)
+
+
+def test_constant_column_does_not_crash_scan():
+    """A constant numeric column must not crash the ADF path. statsmodels'
+    adfuller raises 'Invalid input, x is constant'; tsauditor skips it as
+    trivially stationary and the scan still returns a report."""
+    import numpy as np
+    import pandas as pd
+    import tsauditor as tsa
+
+    idx = pd.date_range("2020-01-01", periods=80, freq="D")
+    df = pd.DataFrame({"price": np.linspace(1, 5, 80), "flag": np.ones(80)}, index=idx)
+    report = tsa.scan(df, run_stationarity=True)  # must not raise
+    assert not any(i.code == "PRF003" and i.column == "flag" for i in report.all_issues)

@@ -20,10 +20,13 @@ def scan(
     target: Optional[str] = None,
     time_col: Optional[str] = None,
     domain: Optional[str] = None,
+    available_at: Optional[dict] = None,
+    constraints: Optional[dict] = None,
     # Fine-grained toggles — all enabled by default
     run_profiler: bool = True,
     run_anomaly: bool = True,
     run_leakage: bool = True,
+    run_stationarity: bool = True,
 ) -> GuardReport:
     """
     Audit a time-series DataFrame for data quality issues.
@@ -42,6 +45,19 @@ def scan(
     domain : Optional[str]
         Domain hint for domain-specific heuristics.
         One of: "finance", "sensor", None.
+    available_at : Optional[dict]
+        Point-in-time availability metadata for the as-of leakage check (LEK004),
+        mapping column name -> per-row publish timestamps (a pd.Series indexed by
+        df.index) or a fixed publication lag (a pd.Timedelta). Only the columns
+        provided are checked. Omitted (default) skips the as-of check, which
+        cannot be inferred from values alone.
+    constraints : Optional[dict]
+        Domain-validity rules (VAL001/VAL002). A dict with optional keys
+        ``"bounds"`` (per-column min/max, e.g.
+        ``{"spread": {"min": 0, "min_exclusive": True}}``) and ``"relations"``
+        (ordered ``(low, high)`` column pairs that must satisfy ``low <= high``,
+        e.g. ``[("bid", "ask")]``). A flat ``{col: {...}}`` mapping is treated as
+        bounds. Omitted (default) skips validity checks.
     run_profiler : bool
         Run structural profiling checks. Default True.
     run_anomaly : bool
@@ -49,6 +65,10 @@ def scan(
     run_leakage : bool
         Run leakage detection checks. Default True.
         Silently skipped if target is None.
+    run_stationarity : bool
+        Run the ADF stationarity test (PRF003). Default True. This is the most
+        expensive check by far (statsmodels ADF dominates runtime); set False to
+        skip it when you only need structural, anomaly and leakage checks.
 
     Returns
     -------
@@ -96,8 +116,10 @@ def scan(
         for issue in audit_frequency(df, domain=domain):
             _append_issue(report, issue)
 
-        for issue in audit_stationarity(df, domain=domain):
-            _append_issue(report, issue)
+        # ADF is the heaviest check; allow opting out.
+        if run_stationarity:
+            for issue in audit_stationarity(df, domain=domain):
+                _append_issue(report, issue)
 
         for issue in audit_missing(df, domain=domain):
             _append_issue(report, issue)
@@ -130,6 +152,25 @@ def scan(
             _append_issue(report, issue)
 
         for issue in audit_temporal_leakage(df, target=target, domain=domain):
+            _append_issue(report, issue)
+
+    # As-of leakage is target-independent and only runs when the caller supplies
+    # availability metadata (it cannot be inferred from values alone).
+    if run_leakage and available_at:
+        from tsauditor.leakage import audit_asof_leakage
+
+        for issue in audit_asof_leakage(df, available_at=available_at):
+            _append_issue(report, issue)
+
+    # Domain-validity rules only run when the caller declares them.
+    if constraints:
+        from tsauditor.validity import audit_validity
+
+        bounds = constraints.get("bounds")
+        relations = constraints.get("relations")
+        if bounds is None and relations is None:
+            bounds = constraints  # flat {col: spec} mapping treated as bounds
+        for issue in audit_validity(df, bounds=bounds, relations=relations):
             _append_issue(report, issue)
 
     return report

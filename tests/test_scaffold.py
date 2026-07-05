@@ -22,7 +22,7 @@ def test_package_imports():
     assert hasattr(tsa, "scan")
     assert hasattr(tsa, "GuardReport")
     assert hasattr(tsa, "Issue")
-    assert tsa.__version__ == "0.1.0"
+    assert tsa.__version__ == "0.2.0"
 
 
 # ── Issue dataclass ───────────────────────────────────────────────────────────

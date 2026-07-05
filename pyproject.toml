@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tsauditor"
-version = "0.1.2"
+version = "0.2.0"
 description = "A data quality auditing library for time-series tabular data in financial and sensor domains."
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Iman", email = "iman@example.com" }]
+authors = [{ name = "Iman", email = "parrisanaeem67@gmail.com" }]
 requires-python = ">=3.9"
 keywords = ["time-series", "data-quality", "leakage-detection", "finance", "sensor", "audit"]
 classifiers = [
@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
@@ -31,11 +33,36 @@ dependencies = [
     "rich>=13.0,<16",
 ]
 
+[project.urls]
+Homepage = "https://github.com/imann128/tsauditor"
+Repository = "https://github.com/imann128/tsauditor"
+Documentation = "https://github.com/imann128/tsauditor/wiki"
+Changelog = "https://github.com/imann128/tsauditor/blob/main/CHANGELOG.md"
+Issues = "https://github.com/imann128/tsauditor/issues"
+
 [project.optional-dependencies]
+pdf = [
+    "matplotlib>=3.5,<4",
+]
+polars = [
+    "polars>=0.20",
+    "pyarrow>=12",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff==0.15.18",
+    "matplotlib>=3.5,<4",
+    "polars>=0.20",
+    "pyarrow>=12",
+    "joblib>=1.2",
+]
+examples = [
+    "scikit-learn>=1.0",
+    "jupyter",
+    "matplotlib>=3.5,<4",
+    "nbclient>=0.7",
+    "nbformat>=5",
 ]
 
 [tool.setuptools.packages.find]

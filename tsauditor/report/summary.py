@@ -51,7 +51,8 @@ class Issue:
     Attributes
     ----------
     module : str
-        Which module raised the issue: "profiler", "anomaly", or "leakage".
+        Which module raised the issue: "profiler", "anomaly", "leakage", or
+        "validity".
     code : str
         Short issue code (e.g. "LEK001"). Use for programmatic filtering.
     severity : str
@@ -109,6 +110,7 @@ class GuardReport:
     warnings: List[Issue] = field(default_factory=list)
     info: List[Issue] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    last_fixes: List[Dict[str, Any]] = field(default_factory=list)
 
     # ── Convenience accessors ─────────────────────────────────────────────────
 
@@ -165,6 +167,75 @@ class GuardReport:
             }
             for i in self.all_issues
         ]
+
+    def apply_fixes(
+        self,
+        df,
+        missing="interpolate",
+        outliers="clip",
+        stuck="nan",
+        leakage=None,
+        verbose=False,
+    ):
+        """
+        Return a repaired *copy* of ``df``, fixing only the columns this report
+        flagged. The original DataFrame is never modified. A change log is
+        recorded on ``self.last_fixes``.
+
+        See ``tsauditor.remediate.apply_fixes`` for the full parameter docs.
+
+        Examples
+        --------
+        >>> report = tsa.scan(df, target="Direction", domain="finance")
+        >>> clean = report.apply_fixes(df, missing="interpolate", outliers="clip")
+        """
+        from tsauditor.remediate import apply_fixes as _apply_fixes
+
+        return _apply_fixes(
+            self,
+            df,
+            missing=missing,
+            outliers=outliers,
+            stuck=stuck,
+            leakage=leakage,
+            verbose=verbose,
+        )
+
+    def health_score(self, df) -> float:
+        """
+        Data Health Score for ``df``: percent of numeric cells not implicated by
+        any quality issue (missing/outlier/spike/stuck). Leakage is excluded — it
+        is a modeling risk, not corrupt data.
+
+        This re-scans ``df`` so the score always reflects the frame you pass —
+        e.g. call it on an ``apply_fixes`` output to get the true "after" score.
+        (Reusing this report's issues would be stale for a repaired frame.) The
+        re-scan skips the leakage and ADF checks, which don't affect the score.
+        """
+        from tsauditor import scan
+        from tsauditor.remediate import health_score as _health_score
+
+        fresh = scan(
+            df,
+            target=self.metadata.get("target"),
+            domain=self.metadata.get("domain"),
+            run_leakage=False,
+            run_stationarity=False,
+        )
+        return _health_score(fresh, df)
+
+    def to_pdf(self, path, df=None, fixed_df=None, title=None):
+        """
+        Export a formal, text-selectable PDF report (Times New Roman, black,
+        tables, no charts). Requires the optional ``[pdf]`` extra
+        (``pip install 'tsauditor[pdf]'``).
+
+        Pass ``df`` for the Data Health Score, and ``fixed_df`` (e.g. the output
+        of ``apply_fixes``) for a before/after comparison.
+        """
+        from tsauditor.report.pdf import export_pdf
+
+        return export_pdf(self, path, df=df, fixed_df=fixed_df, title=title)
 
     # ── Output methods ────────────────────────────────────────────────────────
 
@@ -223,14 +294,20 @@ class GuardReport:
             console.print(f"  • [bold]{issue.code}[/bold]{where}: {issue.suggestion}")
         console.print()
 
-    def to_json(self, path: str) -> None:
+    def to_json(self, path: str, df=None, fixed_df=None) -> None:
         """
-        Export the full report to a JSON file.
+        Export the full report to a JSON file — the machine-readable companion
+        to ``to_pdf``.
 
         Parameters
         ----------
         path : str
             Destination file path (e.g. "report.json").
+        df : optional
+            If given, include the Data Health Score and affected-cell count.
+        fixed_df : optional
+            If given (e.g. the ``apply_fixes`` output), include the post-fix
+            health score and the before/after delta.
         """
         payload = {
             "metadata": self.metadata,
@@ -240,7 +317,29 @@ class GuardReport:
                 "warnings": len(self.warnings),
                 "info": len(self.info),
             },
+            "leaky_columns": self.leaky_columns(),
         }
+        if df is not None:
+            from tsauditor.remediate import affected_cells, health_score
+
+            health = {
+                "score": health_score(self, df),
+                "affected_cells": affected_cells(self, df),
+                "total_cells": int(
+                    len(df) * df.select_dtypes(include="number").shape[1]
+                ),
+            }
+            if fixed_df is not None:
+                from tsauditor import scan
+
+                after_report = scan(
+                    fixed_df,
+                    target=self.metadata.get("target"),
+                    domain=self.metadata.get("domain"),
+                )
+                health["score_after"] = health_score(after_report, fixed_df)
+            payload["health"] = health
+
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, default=_json_default)
 
@@ -252,6 +351,5 @@ class GuardReport:
             "counts": {
                 "critical": len(self.critical),
                 "warnings": len(self.warnings),
-                "info": len(self.info),
             },
         }

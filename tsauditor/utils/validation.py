@@ -13,6 +13,34 @@ from typing import Optional
 import pandas as pd
 
 
+def _is_polars(obj) -> bool:
+    """True if ``obj`` is a polars DataFrame, without importing polars."""
+    return type(obj).__module__.split(".", 1)[0] == "polars"
+
+
+def _polars_to_pandas(df, time_col: Optional[str]) -> pd.DataFrame:
+    """
+    Convert a polars DataFrame to pandas at the scan() boundary.
+
+    polars has no index, so a polars input must name its datetime column via
+    ``time_col`` — there is otherwise no way to know which column is time.
+    See https://github.com/imann128/tsauditor/issues/28.
+    """
+    if time_col is None:
+        raise ValueError(
+            "polars input requires time_col= (polars has no index). "
+            "Pass tsauditor.scan(df, time_col='your_datetime_column'). "
+            "See https://github.com/imann128/tsauditor/issues/28"
+        )
+    try:
+        return df.to_pandas()
+    except Exception as exc:  # pragma: no cover - depends on user's pyarrow
+        raise ImportError(
+            "Converting a polars DataFrame requires pyarrow. "
+            "Install it with:  pip install 'tsauditor[polars]'"
+        ) from exc
+
+
 def validate_dataframe(
     df: pd.DataFrame,
     target: Optional[str],
@@ -50,6 +78,10 @@ def validate_dataframe(
         If time_col or target column is missing, or index cannot be parsed
         as datetime.
     """
+    # polars support (issue #28): convert at the boundary; internals stay pandas.
+    if _is_polars(df):
+        df = _polars_to_pandas(df, time_col)
+
     if not isinstance(df, pd.DataFrame):
         raise TypeError(
             f"tsauditor.scan() expects a pandas DataFrame, got {type(df).__name__}."
