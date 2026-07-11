@@ -102,6 +102,34 @@ def audit_equivalence(
 
     Returns
     -------
+    Examples
+    --------
+    Binary target — a feature that is really just the target's sign:
+
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({
+    ...     "direction":         [1, 0, 1, 0, 1, 0, 1, 0, 1, 0] * 4,
+    ...     "price_change":      [2.5, -1.3, 0.8, -3.1, 1.9, -0.5, 3.2, -2.0, 1.1, -0.9] * 4,
+    ...     "volume":            [100, 150, 120, 130, 90, 110, 140, 95, 105, 115] * 4,
+    ... })
+    >>> issues = audit_equivalence(df, target="direction")
+    >>> issues[0].code
+    'LEK001'
+    >>> issues[0].column
+    'price_change'
+
+    Continuous target — a feature that is the same value in a different unit:
+
+    >>> df2 = pd.DataFrame({
+    ...     "price_euros":  [10.50, 11.20, 9.80, 12.30, 10.90] * 8,
+    ...     "price_cents":  [1050, 1120, 980, 1230, 1090] * 8,
+    ...     "volume":       [100, 150, 120, 130, 90] * 8,
+    ... })
+    >>> issues2 = audit_equivalence(df2, target="price_euros")
+    >>> issues2[0].code
+    'LEK001'
+    >>> issues2[0].column
+    'price_cents'
     List[Issue]
         One LEK001 Issue per flagged feature column.
     """
